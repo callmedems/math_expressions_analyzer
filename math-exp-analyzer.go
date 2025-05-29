@@ -6,22 +6,20 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"unicode"
 )
 
 func main() {
-	// para leer los archivos
 	inputFile := flag.String("i", "", "Expressions.txt")
 	outputFile := flag.String("o", "", "Results.txt")
 	flag.Parse()
 
-	// verificamos que ambos archivos hayan sido especificados
 	if *inputFile == "" || *outputFile == "" {
 		fmt.Println("Uso: go run math-exp-analyzer.go -i expressions.txt -o results.txt")
 		return
 	}
 
-	// abrir el archivo de entrada para leer
 	file, err := os.Open(*inputFile)
 	if err != nil {
 		fmt.Println("Error al abrir archivo de entrada:", err)
@@ -29,7 +27,6 @@ func main() {
 	}
 	defer file.Close()
 
-	// crear o sobrescribir el archivo de salida
 	outFile, err := os.Create(*outputFile)
 	if err != nil {
 		fmt.Println("Error al crear archivo de salida:", err)
@@ -47,7 +44,7 @@ func main() {
 		if valid {
 			result = "Valid"
 		}
-		outFile.WriteString(fmt.Sprintf("Expression %d: %-20s -  %s\n", lineNumber, line, result))
+		outFile.WriteString(fmt.Sprintf("Expression %d: %-40s -  %s\n", lineNumber, line, result))
 		lineNumber++
 	}
 
@@ -56,29 +53,38 @@ func main() {
 	}
 }
 
-// validateExpression valida una expresión matemática
 func validateExpression(expr string) bool {
+	expr = strings.ReplaceAll(expr, " ", "")
+	if expr == "" {
+		return false
+	}
+
 	stack := []rune{}
+	prevToken := ""
 	i := 0
 	length := len(expr)
 
 	for i < length {
 		ch := rune(expr[i])
 
-		// Saltar espacios
-		if unicode.IsSpace(ch) {
-			i++
-			continue
-		}
-
-		// Abrir paréntesis o corchetes
+		// Manejar paréntesis y corchetes
 		if ch == '(' || ch == '[' {
+			// Verificar que no haya corchetes dentro de paréntesis
+			if ch == '[' {
+				for j := len(stack) - 1; j >= 0; j-- {
+					if stack[j] == '(' {
+						return false
+					} else if stack[j] == '[' {
+						break
+					}
+				}
+			}
 			stack = append(stack, ch)
+			prevToken = string(ch)
 			i++
 			continue
 		}
 
-		// Cerrar paréntesis o corchetes
 		if ch == ')' || ch == ']' {
 			if len(stack) == 0 {
 				return false
@@ -88,27 +94,32 @@ func validateExpression(expr string) bool {
 				return false
 			}
 			stack = stack[:len(stack)-1]
+			prevToken = string(ch)
 			i++
 			continue
 		}
 
-		// Validar operadores
+		// Manejar operadores
 		if isOperator(ch) {
-			// Checar doble operador **
+			// Manejar '**' para exponentiación
 			if ch == '*' && i+1 < length && expr[i+1] == '*' {
+				if prevToken == "" || isOperator(rune(prevToken[0])) || prevToken == "(" || prevToken == "[" {
+					return false
+				}
 				i += 2
+				prevToken = "**"
 				continue
 			}
 
-			// Validar que no sea operador al final o duplicado
-			if i == length-1 || isOperator(rune(expr[i+1])) {
+			if prevToken == "" || isOperator(rune(prevToken[0])) || prevToken == "(" || prevToken == "[" {
 				return false
 			}
 			i++
+			prevToken = string(ch)
 			continue
 		}
 
-		// Validar número (real o entero)
+		// Manejar números
 		if unicode.IsDigit(ch) || ch == '.' || ch == '-' {
 			start := i
 			if ch == '-' {
@@ -129,12 +140,20 @@ func validateExpression(expr string) bool {
 				i++
 			}
 
-			// Verificar si es un número válido con regex
 			number := expr[start:i]
 			matched, _ := regexp.MatchString(`^-?\d+(\.\d+)?$`, number)
 			if !matched {
 				return false
 			}
+
+			// Verificar que no haya concatenación implícita con paréntesis o corchetes
+			if i < length {
+				nextCh := rune(expr[i])
+				if nextCh == '(' || nextCh == '[' {
+					return false
+				}
+			}
+			prevToken = "number"
 			continue
 		}
 

@@ -10,18 +10,15 @@ import (
 )
 
 func main() {
-	// para leer los archivos
 	inputFile := flag.String("i", "", "Expressions.txt")
 	outputFile := flag.String("o", "", "Results.txt")
 	flag.Parse()
 
-	// verificamos que ambos archivos hayan sido especificados
 	if *inputFile == "" || *outputFile == "" {
 		fmt.Println("Uso: go run math-exp-analyzer.go -i expressions.txt -o results.txt")
 		return
 	}
 
-	// abrir el archivo de entrada para leer
 	file, err := os.Open(*inputFile)
 	if err != nil {
 		fmt.Println("Error al abrir archivo de entrada:", err)
@@ -29,7 +26,6 @@ func main() {
 	}
 	defer file.Close()
 
-	// crear o sobrescribir el archivo de salida
 	outFile, err := os.Create(*outputFile)
 	if err != nil {
 		fmt.Println("Error al crear archivo de salida:", err)
@@ -47,7 +43,7 @@ func main() {
 		if valid {
 			result = "Valid"
 		}
-		outFile.WriteString(fmt.Sprintf("Expression %d: %-20s -  %s\n", lineNumber, line, result))
+		outFile.WriteString(fmt.Sprintf("Expression %d: %-40s -  %s\n", lineNumber, line, result))
 		lineNumber++
 	}
 
@@ -59,6 +55,7 @@ func main() {
 // validateExpression valida una expresión matemática
 func validateExpression(expr string) bool {
 	stack := []rune{}
+	prevToken := ""
 	i := 0
 	length := len(expr)
 
@@ -71,9 +68,91 @@ func validateExpression(expr string) bool {
 			continue
 		}
 
-		// No permitir () o []
-		if (ch == '(' || ch == '[') && i+1 < length && (expr[i+1] == ')' || expr[i+1] == ']') {
-			return false
+		// Abrir paréntesis o corchetes
+		if ch == '(' || ch == '[' {
+			// Verificar que no haya corchete dentro de paréntesis
+			if ch == '[' && len(stack) > 0 && stack[len(stack)-1] == '(' {
+				return false
+			}
+			// Verificar que no haya número o cierre de paréntesis/corchete antes sin operador
+			if prevToken == "number" || prevToken == ")" || prevToken == "]" {
+				return false
+			}
+			stack = append(stack, ch)
+			prevToken = string(ch)
+			i++
+			continue
+		}
+
+		// Cerrar paréntesis o corchetes
+		if ch == ')' || ch == ']' {
+			if len(stack) == 0 {
+				return false
+			}
+			top := stack[len(stack)-1]
+			if (ch == ')' && top != '(') || (ch == ']' && top != '[') {
+				return false
+			}
+			stack = stack[:len(stack)-1]
+			// Verificar que no haya número o cierre de paréntesis/corchete después sin operador
+			if i+1 < length {
+				nextCh := rune(expr[i+1])
+				if unicode.IsDigit(nextCh) || nextCh == '(' || nextCh == '[' {
+					return false
+				}
+			}
+			prevToken = string(ch)
+			i++
+			continue
+		}
+
+		// Validar operadores
+		if isOperator(ch) {
+			// Checar doble operador **
+			if ch == '*' && i+1 < length && expr[i+1] == '*' {
+				// Verificar que no esté al final
+				if i+2 >= length {
+					return false
+				}
+				next := rune(expr[i+2])
+				if isOperator(next) || next == ')' || next == ']' {
+					return false
+				}
+				// Asegurar que antes haya número o cierre de paréntesis/corchete
+				if prevToken != "number" && prevToken != ")" && prevToken != "]" {
+					return false
+				}
+				prevToken = "operator"
+				i += 2
+				continue
+			}
+
+			// Verificar que no esté al principio o al final
+			if i == 0 || i == length-1 {
+				return false
+			}
+
+			// Verificar que antes haya número o cierre de paréntesis/corchete
+			if prevToken != "number" && prevToken != ")" && prevToken != "]" {
+				return false
+			}
+
+			// Verificar que después haya un número o apertura de paréntesis/corchete
+			j := i + 1
+			for j < length && unicode.IsSpace(rune(expr[j])) {
+				j++
+			}
+			if j >= length {
+				return false
+			}
+			next := rune(expr[j])
+			if !(unicode.IsDigit(next) || next == '(' || next == '[' || next == '-') {
+				return false
+			}
+
+			prevToken = "operator"
+			i++
+			continue
 		}
 
 		// Validar número (real o entero)
@@ -104,60 +183,21 @@ func validateExpression(expr string) bool {
 				return false
 			}
 
-			// No permitir número seguido inmediatamente de ( o [
-			if i < length && (expr[i] == '(' || expr[i] == '[') {
-				return false
-			}
-			continue
-		}
-
-		// Abrir paréntesis o corchetes
-		if ch == '(' || ch == '[' {
-			// No permitir número antes de ( o [
-			if i > 0 && unicode.IsDigit(rune(expr[i-1])) {
-				return false
-			}
-			stack = append(stack, ch)
-			i++
-			continue
-		}
-
-		// Cerrar paréntesis o corchetes
-		if ch == ')' || ch == ']' {
-			if len(stack) == 0 {
-				return false
-			}
-			top := stack[len(stack)-1]
-			if (ch == ')' && top != '(') || (ch == ']' && top != '[') {
-				return false
-			}
-			stack = stack[:len(stack)-1]
-			i++
-			continue
-		}
-
-		// Validar operadores
-		if isOperator(ch) {
-			// Checar doble operador ** y triple operador ***
-			if ch == '*' && i+1 < length && expr[i+1] == '*' {
-				if i+2 < length && expr[i+2] == '*' { // triple ***
+			// Verificar que no haya paréntesis o corchete después sin operador
+			if i < length {
+				nextCh := rune(expr[i])
+				if nextCh == '(' || nextCh == '[' {
 					return false
 				}
-				i += 2
-				continue
 			}
-
-			// Validar que no sea operador al final o duplicado
-			if i == length-1 || isOperator(rune(expr[i+1])) {
-				return false
-			}
-			i++
+			prevToken = "number"
 			continue
 		}
 
-		// Si llega aquí, hay un caracter inválido
+		// Caracter inválido
 		return false
 	}
+
 	return len(stack) == 0
 }
 

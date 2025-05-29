@@ -15,10 +15,9 @@ func main() {
 	flag.Parse()
 
 	if *inputFile == "" || *outputFile == "" {
-		fmt.Println("Uso: go run math-exp-analyzer.go -i expressions.txt -o results.txt")
 		return
 	}
-
+	// Manejo de errores para abrir los archivos recomendados por copilot.
 	file, err := os.Open(*inputFile)
 	if err != nil {
 		fmt.Println("Error al abrir archivo de entrada:", err)
@@ -108,7 +107,7 @@ func validateExpression(expr string) bool {
 
 		// Validar operadores
 		if isOperator(ch) {
-			// Checar doble operador **
+			// Checar operador potencia **
 			if ch == '*' && i+1 < length && expr[i+1] == '*' {
 				// Verificar que no esté al final
 				if i+2 >= length {
@@ -118,7 +117,7 @@ func validateExpression(expr string) bool {
 				if isOperator(next) || next == ')' || next == ']' {
 					return false
 				}
-				// Asegurar que antes haya número o cierre de paréntesis/corchete
+				// Asegura que antes haya número o cierre de paréntesis o corchete
 				if prevToken != "number" && prevToken != ")" && prevToken != "]" {
 					return false
 				}
@@ -132,7 +131,7 @@ func validateExpression(expr string) bool {
 				return false
 			}
 
-			// Verificar que antes haya número o cierre de paréntesis/corchete
+			// Verificar que antes haya número o cierre de paréntesis o corchete
 			if prevToken != "number" && prevToken != ")" && prevToken != "]" {
 				return false
 			}
@@ -165,7 +164,7 @@ func validateExpression(expr string) bool {
 				}
 			}
 
-			dotSeen := false
+			dotSeen := false // se valida el uso de un solo punto despues de un num
 			for i < length && (unicode.IsDigit(rune(expr[i])) || expr[i] == '.') {
 				if expr[i] == '.' {
 					if dotSeen {
@@ -176,14 +175,14 @@ func validateExpression(expr string) bool {
 				i++
 			}
 
-			// Verificar si es un número válido con regex
+			// Verificar si es un numero válido con regex
 			number := expr[start:i]
 			matched, _ := regexp.MatchString(`^-?\d+(\.\d+)?$`, number)
 			if !matched {
 				return false
 			}
 
-			// Verificar que no haya paréntesis o corchete después sin operador
+			// Checa que no haya paréntesis o corchete después sin operador
 			if i < length {
 				nextCh := rune(expr[i])
 				if nextCh == '(' || nextCh == '[' {
@@ -201,6 +200,6 @@ func validateExpression(expr string) bool {
 	return len(stack) == 0
 }
 
-func isOperator(r rune) bool {
+func isOperator(r rune) bool { //booleano con operadores váalidos
 	return r == '+' || r == '-' || r == '*' || r == '/'
 }

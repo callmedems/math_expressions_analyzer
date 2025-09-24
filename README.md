@@ -1,8 +1,8 @@
 Math Expressions Analyzer
 =========================
 
-This is a project for my Computational Theory Class. 
-You will fin the implementation of a math expression analyzers that will validate simple mathematical expressions. Below is the criteria that had to be considered for the creation of this analyzer. We created a proper and powerful enough grammar(s) that will correctly analyze mathematical expressions without allowing invalid or wrong constructed math expressions.
+This is a project for my Computational Theory Class.
+You will find the implementation of a math expression analyzers that will validate simple mathematical expressions. Below is the criteria that had to be considered for the creation of this analyzer. We created a proper and powerful enough grammar(s) that will correctly analyze mathematical expressions without allowing invalid or wrong constructed math expressions.
 
 - Support for balanced parenthesis `()` and brackets`[]`
 - Supported operators:

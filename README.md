@@ -1,8 +1,8 @@
 Math Expressions Analyzer
 =========================
 
-This is the time to apply what you have learned in the Computational Theory Class.
-You will implement a math expression analyzers that will validate simple mathematical expressions. Below the criteria you need to consider. You'll need to create a proper and powerful enough grammar(s) that will correctly analyze mathematical expressions without allowing invalid or wrong constructed math expressions.
+This is a project for my Computational Theory Class. 
+You will fin the implementation of a math expression analyzers that will validate simple mathematical expressions. Below is the criteria that had to be considered for the creation of this analyzer. We created a proper and powerful enough grammar(s) that will correctly analyze mathematical expressions without allowing invalid or wrong constructed math expressions.
 
 - Support for balanced parenthesis `()` and brackets`[]`
 - Supported operators:
@@ -28,18 +28,18 @@ Deliverables
 - Main program should be impleted on [`math-exp-analyzer.go`](./`math-exp-analyzer.go)
 
 
-How your program will be tested
+How the program will be tested
 -------------------------------
 
-This is going to be simple, your program will be run as follows:
+The program will be run as follows:
 
 ```
 go run math-exp-analyzer.go -i expressions.txt -o results.txt
 ```
 
-There's an [`expressions.txt`](`expressions.txt`) document sample file that you can use to test your program.
+There's an [`expressions.txt`](`expressions.txt`) document sample file that can be used to test the program.
 
-Your `results.txt` file should look as follows:
+The `results.txt` file should look as follows:
 
 ```
 Expression 1: (6**6 / 2)      -  Valid
